@@ -4,8 +4,6 @@ import base64
 import glob
 import os
 
-from IPython.display import HTML, display
-
 LEARNING_RATE = 0.1       # alpha
 DISCOUNT_FACTOR = 0.99    # gamma
 

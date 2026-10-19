@@ -4,8 +4,10 @@ import base64
 import glob
 import os
 
+import matplotlib.pyplot as plt
+
 LEARNING_RATE = 0.1       # alpha
-DISCOUNT_FACTOR = 0.99    # gamma
+DISCOUNT_FACTOR = 0.90    # gamma
 
 EPSILON_START = 1.0
 EPSILON_MIN = 0.05
@@ -78,7 +80,7 @@ for episode in range(NUM_EPISODES):
     )
 
 # training eval ---
-video_dir = "./frozenlake_recording"
+video_dir = "./frozenlake_recording1"
 eval_env = gym.make(
     "FrozenLake-v1",
     map_name="8x8",
@@ -91,8 +93,9 @@ eval_env = gym.wrappers.RecordVideo(
     episode_trigger=lambda episode_id: True,
     name_prefix="eval",
 )
-NUM_EVAL_EPISODES = 1
+NUM_EVAL_EPISODES = 30
 successes = 0
+total_steps = 0
 
 for episode in range(NUM_EVAL_EPISODES):
     state, info = eval_env.reset()
@@ -106,6 +109,7 @@ for episode in range(NUM_EVAL_EPISODES):
         state, reward, terminated, truncated, info = (
             eval_env.step(action)
         )
+        total_steps += 1
 
         if terminated or truncated:
             successes += int(reward == 1)
@@ -116,3 +120,32 @@ eval_env.close()
 print("\nTraining complete!")
 print(f"Final epsilon: {epsilon:.4f}")
 print(f"Evaluation success rate: {successes / NUM_EVAL_EPISODES:.2%}")
+print(f"average steps to completion: {total_steps / NUM_EVAL_EPISODES:.2f}")
+
+#--------------------- PLOTS -----------------
+# reward vs episodes in training. This is a moving average to better show progression
+window = 500
+
+rewards = np.array(episode_rewards, dtype=float)
+
+if len(rewards) >= window:
+    average_rewards = np.convolve(
+        rewards,
+        np.ones(window) / window,
+        mode="valid"
+    )
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(
+        np.arange(window, len(rewards) + 1),
+        average_rewards,
+        label=f"Moving average ({window} episodes)"
+    )
+
+    plt.xlabel("Training episode")
+    plt.ylabel("Average reward")
+    plt.title("FrozenLake Q-learning: Reward vs. Episode")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
